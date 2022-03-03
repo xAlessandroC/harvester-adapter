@@ -1,0 +1,133 @@
+package it.unibo.disi.harvesteradapter.controller;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import it.unibo.disi.harvesteradapter.entity.SimulationJob;
+import it.unibo.disi.harvesteradapter.entity.json_model.HarvesterInput;
+import it.unibo.disi.harvesteradapter.entity.json_model.HarvesterOutput;
+import it.unibo.disi.harvesteradapter.entity.json_model.SimulationResponse;
+
+import java.io.File;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@RestController
+@RequestMapping("/harvester")
+public class HarvesterController {
+    
+    private static Logger logger = LoggerFactory.getLogger(HarvesterController.class);
+
+    private ExecutorService executor;
+    private Map<String, Future<HarvesterOutput>> jobMap;
+
+    @Value("${harvester_env}")
+    private Resource harvesterEnv;
+
+    @Value("${harvester_executable}")
+    private Resource harvesterExecutable;
+
+    /*
+    *   Initialization
+    */
+    public HarvesterController() {
+        executor = Executors.newFixedThreadPool(10);
+        jobMap = new ConcurrentHashMap<>();
+    }
+
+    /*
+    *   Routes
+    */
+
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public String getHarvesterName(){
+        logger.info("[HARVESTER CONTROLLER] [GET] [/harvester]: Request received!");
+        
+        return "{\"response\":\"ATH Harvester Adapter v.01\"}";
+    }
+
+    @PostMapping(path = {"/simulation"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public String startSimulation(@RequestBody final HarvesterInput input){
+        logger.info("[HARVESTER CONTROLLER] [POST] [/harvester/simulation]: Simulation request received");
+
+        String id = "";
+
+        try{
+
+            synchronized(this){
+                // Write input json on file using Jackson
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.setSerializationInclusion(Include.ALWAYS);
+                objectMapper.writeValue(new File(this.harvesterEnv.getFile().getAbsolutePath() + "\\AHT_DrHarvester_INPUT.json"), input);
+
+                id = UUID.randomUUID().toString();
+                Future<HarvesterOutput> future = executor.submit(new SimulationJob(this.harvesterExecutable.getFile().getAbsolutePath(), this.harvesterEnv.getFile().getAbsolutePath()));
+                
+                logger.info("[HARVESTER CONTROLLER] [POST] [/harvester/simulation]: Simulation submitted with ID " + id + " - " + future);
+
+                jobMap.put(id, future);
+            }
+        
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+
+        return "{\"jobId\":\"" + id + "\"}";
+    }
+
+    @GetMapping(path = {"/simulation/{id}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public SimulationResponse getSimulationResult(@PathVariable final String id){
+        logger.info("[HARVESTER CONTROLLER] [GET] [/harvester/simulation/id]: Simulation result request received");
+
+        boolean terminated = false;
+        HarvesterOutput result  = null;
+
+        if(!jobMap.containsKey(id)){
+            throw  new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        try{
+
+            Future<HarvesterOutput> future = jobMap.get(id);
+    
+            if(future.isDone()){
+                terminated = false;
+                result = future.get();
+            }
+
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+
+        SimulationResponse response = new SimulationResponse();
+        response.setResult(result);
+        response.setTerminated(terminated);
+
+        return response;
+    }
+    
+}
