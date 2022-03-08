@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,6 +47,9 @@ public class HarvesterController {
     @Value("${harvester_executable}")
     private Resource harvesterExecutable;
 
+    @Value("${capacity}")
+    private int capacity;
+
     /*
     *   Initialization
     */
@@ -68,12 +72,16 @@ public class HarvesterController {
 
     @PostMapping(path = {"/simulation"}, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public String startSimulation(@RequestBody final HarvesterInput input){
+    public ResponseEntity<String> startSimulation(@RequestBody final HarvesterInput input){
         logger.info("[HARVESTER CONTROLLER] [POST] [/harvester/simulation]: Simulation request received");
 
         String id = "";
 
         try{
+
+            if(getRunningSimulations() == capacity){
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"response\":\"Max capacity reached!\"}");
+            }
 
             synchronized(this){
                 // Write input json on file using Jackson
@@ -94,7 +102,7 @@ public class HarvesterController {
             e.printStackTrace();
         }
 
-        return "{\"jobId\":\"" + id + "\"}";
+        return ResponseEntity.status(HttpStatus.OK).body("{\"jobId\":\"" + id + "\"}");
     }
 
     @GetMapping(path = {"/simulation/{id}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -128,6 +136,19 @@ public class HarvesterController {
         response.setTerminated(terminated);
 
         return response;
+    }
+
+    private int getRunningSimulations(){
+
+        int count = 0;
+        for (String keyString: jobMap.keySet()) {
+            Future<HarvesterOutput> future = jobMap.get(keyString);
+        
+            if(!future.isDone())
+                count ++;
+        }
+
+        return count;
     }
     
 }
