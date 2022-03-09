@@ -39,6 +39,9 @@ public class SimulationJob implements Callable<HarvesterOutput>{
             result = objectMapper.readValue(new File(this.workingDirPath + "\\AHT_DrHarvester_OUTPUT.json"), HarvesterOutput.class);
 
         }
+        catch(InterruptedException e){
+            return null;
+        }
         catch(Exception e){
             e.printStackTrace();
             return null;

@@ -29,6 +29,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import javax.annotation.PreDestroy;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -56,6 +58,22 @@ public class HarvesterController {
     public HarvesterController() {
         executor = Executors.newFixedThreadPool(10);
         jobMap = new ConcurrentHashMap<>();
+    }
+
+    /*
+    * Termination
+    */
+    @PreDestroy
+    public void destroy(){
+        logger.info("[HARVESTER CONTROLLER]: Stopping all jobs");
+
+        for (String keyString: jobMap.keySet()) {
+            Future<HarvesterOutput> future = jobMap.get(keyString);
+        
+            if(!future.isDone())
+                future.cancel(true);
+        }
+        this.executor.shutdownNow();
     }
 
     /*
