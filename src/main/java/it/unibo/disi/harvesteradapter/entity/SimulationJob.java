@@ -27,11 +27,12 @@ public class SimulationJob implements Callable<HarvesterOutput>{
     public HarvesterOutput call() {
         //Execute simulation
         HarvesterOutput result = null;
+        Process p = null;
 
         try{
 
             logger.info("[SIMULATION JOB] - Starting job " + "cmd /c " + executablePath);
-            Process p = Runtime.getRuntime().exec("cmd /c " + executablePath, null, new File(this.workingDirPath));
+            p = Runtime.getRuntime().exec("cmd /c " + executablePath, null, new File(this.workingDirPath));
             p.waitFor();
 
             ObjectMapper objectMapper = new ObjectMapper();
@@ -40,6 +41,7 @@ public class SimulationJob implements Callable<HarvesterOutput>{
 
         }
         catch(InterruptedException e){
+            p.destroy();
             return null;
         }
         catch(Exception e){
