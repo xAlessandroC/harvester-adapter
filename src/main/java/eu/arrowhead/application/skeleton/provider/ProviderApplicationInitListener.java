@@ -84,13 +84,16 @@ public class ProviderApplicationInitListener extends ApplicationInitListener {
 		}		
 		
 		final ServiceRegistryRequestDTO getHarvesterNameRequest = this.createServiceRegistryRequest("execute-simulation", "/harvester/simulation", HttpMethod.POST);
+		final ServiceRegistryRequestDTO getSimulationStatus = this.createServiceRegistryRequest("get-simulation-status", "/harvester/simulation/{id}", HttpMethod.GET);
 		this.arrowheadService.forceRegisterServiceToServiceRegistry(getHarvesterNameRequest);
+		this.arrowheadService.forceRegisterServiceToServiceRegistry(getSimulationStatus);
 	}
 	
 	//-------------------------------------------------------------------------------------------------
 	@Override
 	public void customDestroy() {
 		this.arrowheadService.unregisterServiceFromServiceRegistry("execute-simulation", "/harvester/simulation");
+		this.arrowheadService.unregisterServiceFromServiceRegistry("get-simulation-status", "/harvester/simulation/{id}");
 	}
 	
 	//=================================================================================================
