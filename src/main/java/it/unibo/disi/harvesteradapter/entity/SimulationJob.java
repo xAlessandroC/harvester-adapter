@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.unibo.disi.harvesteradapter.entity.json_model.HarvesterInput;
 import it.unibo.disi.harvesteradapter.entity.json_model.HarvesterOutput;
 
 public class SimulationJob implements Callable<HarvesterOutput>{
@@ -17,10 +18,14 @@ public class SimulationJob implements Callable<HarvesterOutput>{
 
     private String executablePath;
     private String workingDirPath;
+    private String simulation_foldname;
+    private HarvesterInput input;
 
-    public SimulationJob(String simulationExecutablePath, String workingDirPath){
+    public SimulationJob(String simulationExecutablePath, String workingDirPath, String simulation_foldname, HarvesterInput input){
         this.executablePath = simulationExecutablePath;
         this.workingDirPath = workingDirPath;
+        this.simulation_foldname = simulation_foldname;
+        this.input = input;
     }
 
     @Override
@@ -30,14 +35,17 @@ public class SimulationJob implements Callable<HarvesterOutput>{
         Process p = null;
 
         try{
-
-            logger.info("[SIMULATION JOB] - Starting job " + "cmd /c " + executablePath);
-            p = Runtime.getRuntime().exec("cmd /c " + executablePath, null, new File(this.workingDirPath));
-            p.waitFor();
-
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.setSerializationInclusion(Include.ALWAYS);
-            result = objectMapper.readValue(new File(this.workingDirPath + "\\AHT_DrHarvester_OUTPUT.json"), HarvesterOutput.class);
+
+            // Write input inside the proper simulation folder
+            objectMapper.writeValue(new File(this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json"), input);
+
+            logger.info("[SIMULATION JOB] - Starting job " + "cmd /c " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json");
+            p = Runtime.getRuntime().exec("cmd /c " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json", null, new File(this.workingDirPath));
+            p.waitFor();
+
+            result = objectMapper.readValue(new File(this.workingDirPath + File.separator + "AHT_DrHarvester_OUTPUT.json"), HarvesterOutput.class);
 
         }
         catch(InterruptedException e){
