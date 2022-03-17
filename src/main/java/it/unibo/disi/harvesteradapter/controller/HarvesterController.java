@@ -98,20 +98,6 @@ public class HarvesterController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"response\":\"Max capacity reached!\"}");
             }
 
-            // synchronized(this){
-            //     // Write input json on file using Jackson
-            //     ObjectMapper objectMapper = new ObjectMapper();
-            //     objectMapper.setSerializationInclusion(Include.ALWAYS);
-            //     objectMapper.writeValue(new File(this.harvesterEnv.getFile().getAbsolutePath() + "\\AHT_DrHarvester_INPUT.json"), input);
-
-            //     id = UUID.randomUUID().toString();
-            //     Future<HarvesterOutput> future = executor.submit(new SimulationJob(this.harvesterExecutable.getFile().getAbsolutePath(), this.harvesterEnv.getFile().getAbsolutePath()));
-                
-            //     logger.info("[HARVESTER CONTROLLER] [POST] [/harvester/simulation]: Simulation submitted with ID " + id + " - " + future);
-
-            //     jobMap.put(id, future);
-            // }
-
             synchronized(this){
                 id = UUID.randomUUID().toString();
 

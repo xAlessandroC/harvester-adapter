@@ -41,10 +41,12 @@ public class SimulationJob implements Callable<HarvesterOutput>{
             // Write input inside the proper simulation folder
             objectMapper.writeValue(new File(this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json"), input);
 
+            // Start simulation
             logger.info("[SIMULATION JOB] - Starting job " + "cmd /c " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json");
             p = Runtime.getRuntime().exec("cmd /c " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json", null, new File(this.workingDirPath));
             p.waitFor();
 
+            // Get result
             result = objectMapper.readValue(new File(this.workingDirPath + File.separator + "AHT_DrHarvester_OUTPUT.json"), HarvesterOutput.class);
 
         }
