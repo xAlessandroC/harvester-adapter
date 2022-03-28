@@ -42,12 +42,19 @@ public class SimulationJob implements Callable<HarvesterOutput>{
             objectMapper.writeValue(new File(this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json"), input);
 
             // Start simulation
-            logger.info("[SIMULATION JOB] - Starting job " + "cmd /c " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json");
-            p = Runtime.getRuntime().exec("cmd /c " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json", null, new File(this.workingDirPath));
+            if(System.getProperty("os.name").startsWith("Linux")){
+                // Linux
+                logger.info("[SIMULATION JOB] - Starting job " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json");
+                p = Runtime.getRuntime().exec( executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json", null, new File(this.workingDirPath));
+            }else{
+                // Windows
+                logger.info("[SIMULATION JOB] - Starting job " + "cmd /c " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json");
+                p = Runtime.getRuntime().exec("cmd /c " + executablePath + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_INPUT.json" + " " + this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json", null, new File(this.workingDirPath));
+            }
             p.waitFor();
 
             // Get result
-            result = objectMapper.readValue(new File(this.workingDirPath + File.separator + "AHT_DrHarvester_OUTPUT.json"), HarvesterOutput.class);
+            result = objectMapper.readValue(new File(this.simulation_foldname + File.separator + "AHT_DrHarvester_OUTPUT.json"), HarvesterOutput.class);
 
         }
         catch(InterruptedException e){
