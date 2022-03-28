@@ -141,7 +141,7 @@ public class HarvesterController {
             Future<HarvesterOutput> future = jobMap.get(id);
     
             if(future.isDone()){
-                terminated = false;
+                terminated = true;
                 result = future.get();
             }
 
