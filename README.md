@@ -10,7 +10,7 @@ The harvester adapter enables the registration of the Harvester tool functionali
 * [API](#apis)
     * [Submit Simulation](#submit-simulation)
     * [Get Simulation Result](#get-simulation-result)
-
+* [Citation](#citation)
 ---
 
 ## Requirements
@@ -164,3 +164,8 @@ java -jar .\target\harvester-adapter-0.0.1-SNAPSHOT.jar
 | `dSOCrate` | Estimated rate of variation of state of charge |
 | `date` | date captured at the end of the simulation |
 | `simStatus` | Reutrn flag with the status of the requested simulation. 1->Simulation valid, 0-> Simulation not valid |
+
+## Citation
+This tool uses the LTSPICE2MATLAB script provided by Paul Wagner.
+
+Paul Wagner (2022). Fast Import of Compressed Binary .RAW Files Created with LTspice Circuit Simulator (https://www.mathworks.com/matlabcentral/fileexchange/23394-fast-import-of-compressed-binary-raw-files-created-with-ltspice-circuit-simulator), MATLAB Central File Exchange. Retrieved March 29, 2022.

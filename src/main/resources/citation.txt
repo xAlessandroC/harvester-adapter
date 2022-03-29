@@ -1,0 +1,3 @@
+This tool uses the LTSPICE2MATLAB script provided by Paul Wagner.
+
+Paul Wagner (2022). Fast Import of Compressed Binary .RAW Files Created with LTspice Circuit Simulator (https://www.mathworks.com/matlabcentral/fileexchange/23394-fast-import-of-compressed-binary-raw-files-created-with-ltspice-circuit-simulator), MATLAB Central File Exchange. Retrieved March 29, 2022.
