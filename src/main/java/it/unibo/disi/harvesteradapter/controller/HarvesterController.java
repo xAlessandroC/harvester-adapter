@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -201,6 +202,7 @@ public class HarvesterController {
         LocalDateTime now = LocalDateTime.now();
         logger.info("[HARVESTER CONTROLLER]: Starting cleaning procedure " + now);
         
+        Locale.setDefault(Locale.ITALIAN);
         Set<String> toDelete = new HashSet<String>();
         try {
 
