@@ -3,10 +3,14 @@ package it.unibo.disi.harvesteradapter.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.util.FileSystemUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +26,13 @@ import it.unibo.disi.harvesteradapter.entity.json_model.HarvesterOutput;
 import it.unibo.disi.harvesteradapter.entity.json_model.SimulationResponse;
 
 import java.io.File;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +41,8 @@ import java.util.concurrent.Future;
 
 import javax.annotation.PreDestroy;
 
+@Configuration
+@EnableScheduling
 @RestController
 @RequestMapping("/harvester")
 public class HarvesterController {
@@ -49,6 +61,9 @@ public class HarvesterController {
     @Value("${capacity}")
     private int capacity;
 
+    @Value("${cleaner.delay}")
+    private int cleaner_delay;
+
     /*
     *   Initialization
     */
@@ -64,12 +79,21 @@ public class HarvesterController {
     public void destroy(){
         logger.info("[HARVESTER CONTROLLER]: Stopping all jobs");
 
-        for (String keyString: jobMap.keySet()) {
-            Future<HarvesterOutput> future = jobMap.get(keyString);
-        
-            if(!future.isDone())
-                future.cancel(true);
+        try{
+            for (String keyString: jobMap.keySet()) {
+                Future<HarvesterOutput> future = jobMap.get(keyString);
+                String simulation_foldname = this.harvesterEnv.getFile().getAbsolutePath() + File.separator + "simulations" + File.separator + keyString;
+    
+                if(!future.isDone())
+                    future.cancel(true);
+
+                FileSystemUtils.deleteRecursively(new File(simulation_foldname));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.info("[HARVESTER CONTROLLER]: Error during stopping procedure");
         }
+
         this.executor.shutdownNow();
     }
 
@@ -168,6 +192,51 @@ public class HarvesterController {
         }
 
         return count;
+    }
+
+    // Clenear procedure
+    @Scheduled(fixedDelayString = "${cleaner.delay}")
+    private void cleanJob(){
+
+        logger.info("[HARVESTER CONTROLLER]: Cleaner delay " + cleaner_delay);
+        LocalDateTime now = LocalDateTime.now();
+        logger.info("[HARVESTER CONTROLLER]: Starting cleaning procedure " + now);
+        
+        Locale.setDefault(Locale.ITALIAN);
+        Set<String> toDelete = new HashSet<String>();
+        try {
+
+            for (String uuid : jobMap.keySet()) {
+                Future<HarvesterOutput> selected_future = jobMap.get(uuid);
+                
+                if(selected_future.isDone() && selected_future.get() != null){
+                    // Check if needs to be deleted
+                    HarvesterOutput output = selected_future.get();
+                    String date = output.getDate();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss");
+                    LocalDateTime simulation_datetime = LocalDateTime.parse(date.toLowerCase(), formatter);
+
+                    logger.info("[HARVESTER CONTROLLER]: Analyzing " + uuid + " - delay is " + Duration.between(simulation_datetime, now).getSeconds() + " s");
+                    if(Duration.between(simulation_datetime, now).getSeconds() > cleaner_delay/1000 ){
+                        String simulation_foldname = this.harvesterEnv.getFile().getAbsolutePath() + File.separator + "simulations" + File.separator + uuid;
+                        boolean deleted = FileSystemUtils.deleteRecursively(new File(simulation_foldname));
+
+                        logger.info("[HARVESTER CONTROLLER]: Deleting " + simulation_foldname + " " + deleted);
+                        toDelete.add(uuid);
+                    }
+                }
+            }
+
+            for (String uuid : toDelete) {
+                jobMap.remove(uuid);
+            }
+
+            logger.info("[HARVESTER CONTROLLER]: Cleaning procedure completed");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.info("[HARVESTER CONTROLLER]: Error during cleaning procedure");
+        }
     }
     
 }
