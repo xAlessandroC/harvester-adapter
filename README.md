@@ -8,6 +8,8 @@ The harvester adapter enables the registration of the Harvester tool functionali
 * [Application setup](#application-set-up)
 * [Build and start](#build-and-start-the-adapter)
 * [API](#apis)
+    * [Submit Simulation](#submit-simulation)
+    * [Get Simulation Result](#get-simulation-result)
 
 ---
 
@@ -70,39 +72,66 @@ java -jar .\target\harvester-adapter-0.0.1-SNAPSHOT.jar
 ```
 
 ## APIs
+### Submit Simulation
 | Function | URL subpath | Method | Input | Output |
 | -------- | ----------- | ------ | ----- | ------ |
 | Submit Simulation     | /harvester/simulation       | POST    | [HarvesterInput](#harvester-input)     | [UUID](#uuid)     |
 
+"SolarHeavyLoad" | "SolarLightLoad" | "TEG" | "Piezo"
 #### Harvester Input
 ```json
 {
-	"devId": "string",
-	"harvId": "SolarHeavyLoad" | "SolarLightLoad" | "TEG" | "Piezo",
-	
-	"lowpwrI": integer,
-	"activeI": integer,
-	"duty": integer,
-	"Vload": float,
-    "devAvgI": float,
-	"batSOC": float,
-	"batV": float,
-	
-	"phIrr": float,
-	"thThot": integer,
-	"thTcold": integer,
-	"thGrad": integer,
-	"vibAcc": integer,
-	"vibFreq": integer
+ "devId": "string",
+ "harvId": "string",
+
+ "lowpwrI": 0.0,
+ "activeI": 0.0,
+ "duty": 0,
+ "Vload": 0.0,
+ "devAvgI": 0.0,
+ "batSOC": 0.0,
+ "batV": 0.0,
+
+ "phIrr": 0.0,
+ "thThot": 0,
+ "thTcold": 0,
+ "thGrad": 0,
+ "vibAcc": 0,
+ "vibFreq": 0
 }
 ```
+| Field | Description | Unit | Mandatory |
+| ----- | ----------- | --------- | --------- |
+| `devId` | Name of the device  | - | yes |
+| `harvId` | Name od the energy harvesting model one of "SolarHeavyLoad", "SolarLightLoad", "TEG", "Piezo" | - | yes |
+| `lowpwrI` | Device current consumption in low power (idle) state | *mA* | yes - Alternative to devAvgI |
+| `activeI` | Device current consumption in active state | *mA* | yes - Alternative to devAvgI |
+| `duty` | Duty cycle expressed as percentage | *%* | yes - Alternative to devAvgI |
+| `devAvgI` | Average current consumption of the device | *mA* | yes - Alternative to the previous three fields |
+| `Vload` | Nominal power supply voltage of the load | *V* | yes |
+| `batSOC` | Actual state of charge | *%* | yes - Alternative to batV |
+| `batV` | Actual battery voltage | *V* | yes - Alternative to batSOC |
+| `phIrr` | Irradiance | *W/m<sup>2</sup>* | it depends on the harvId type |
+| `thThot` | Hot side TEG's temperature | *°C* | it depends on the harvId type |
+| `thTcold` | Cold side TEG's temperature | *°C* | it depends on the harvId type |
+| `thGrad` | Thermal gradient | *°C* | it depends on the harvId type |
+| `vibAcc` | Amount of acceleration vibrations | *mG* | it depends on the harvId type |
+| `vibFreq` | Fundamental frequency | *Hz* | it depends on the harvId type |
+
+</br>
+
 #### UUID
 ```json
 {
-	"jobId": "string"
+ "jobId": "string"
 }
 ```
+| Field | Description |
+| ----- | ----------- |
+| `jobId` | ID of the submitted simulation |
 </br>
+
+### Get Simulation Result
 
 | Function | URL subpath | Method | Input | Output |
 | -------- | ----------- | ------ | ----- | ------ |
@@ -111,16 +140,27 @@ java -jar .\target\harvester-adapter-0.0.1-SNAPSHOT.jar
 #### Harvester Output
 ```json
 {
-	"terminated": boolean,
-    "result": {
-        "devId": "string",
-        "harvId": "string",
-        "batState": integer,
-        "batlifeh": float,
-        "tChargeh": integer,
-        "dSOCrate": float,
-        "date": "string",
-        "simStatus": integer
-    }
+ "terminated": true,
+ "result": {
+    "devId": "string",
+    "harvId": "string",
+    "batState": 0,
+    "batlifeh": 0.0,
+    "tChargeh": 0,
+    "dSOCrate": 0.0,
+    "date": "string",
+    "simStatus": 0
+ }
 }
 ```
+| Field | Description |
+| ----- | ----------- |
+| `terminated` | Check if simulation is finished. If false the result will be null |
+| `devId` | Name of the device |
+| `harvId` | Name od the energy harvesting model |
+| `batState` | Battery State Flag. 1->Charging, 0-> Discharging |
+| `batlifeh` | Estimated remaining battery life | 
+| `tChargeh` | Estimated time to fully charge the battery |
+| `dSOCrate` | Estimated rate of variation of state of charge |
+| `date` | date captured at the end of the simulation |
+| `simStatus` | Reutrn flag with the status of the requested simulation. 1->Simulation valid, 0-> Simulation not valid |
