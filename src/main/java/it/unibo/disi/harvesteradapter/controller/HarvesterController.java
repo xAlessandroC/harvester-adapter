@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.FileSystemUtils;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +44,7 @@ import javax.annotation.PreDestroy;
 
 @Configuration
 @EnableScheduling
+@CrossOrigin
 @RestController
 @RequestMapping("/harvester")
 public class HarvesterController {
@@ -68,6 +70,7 @@ public class HarvesterController {
     *   Initialization
     */
     public HarvesterController() {
+        logger.info("[HARVESTER CONTROLLER]: CORS TEST");
         executor = Executors.newFixedThreadPool(10);
         jobMap = new ConcurrentHashMap<>();
     }

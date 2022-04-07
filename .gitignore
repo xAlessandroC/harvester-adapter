@@ -71,5 +71,6 @@ buildNumber.properties
 ### Custom ###
 !lib/*
 src/main/resources/harvester_env/
+*.log
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,maven,java
